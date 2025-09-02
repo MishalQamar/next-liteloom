@@ -8,6 +8,17 @@ export default function CreateVideo() {
   const [audioStream, setAudioStream] = useState<MediaStream | null>(
     null
   );
+  const [recorder, setRecorder] = useState<MediaRecorder | null>(
+    null
+  );
+
+  console.log(recorder);
+
+  const isrecording = recorder
+    ? recorder.state === 'recording'
+    : false;
+
+  const chunks = useRef<Blob[]>([]);
 
   const streamActive = stream?.active;
   const [shouldCaptureAudio, setShouldCaptureAudio] = useState(true);
@@ -65,12 +76,53 @@ export default function CreateVideo() {
       });
   };
 
+  const startRecording = () => {
+    const fullStream = new MediaStream([
+      ...(stream?.getTracks() || []),
+      ...(audioStream?.getTracks() || []),
+    ]);
+
+    const newRecorder = new MediaRecorder(fullStream);
+    setRecorder(newRecorder);
+
+    newRecorder.start(300);
+    newRecorder.ondataavailable = (event) => {
+      if (!event.data || event.data.size <= 0) return;
+
+      chunks.current.push(event.data);
+    };
+    newRecorder.onstop = () => {
+      console.log(chunks);
+    };
+  };
+
+  const stopRecording = () => {
+    if (recorder) {
+      recorder.stream.getTracks().forEach((track) => {
+        track.stop();
+      });
+      setStream(null);
+      setAudioStream(null);
+      setRecorder(null);
+    }
+  };
+
   return (
     <div>
       <div>Create Video</div>
       {streamActive ? (
         <div>
           <video ref={player} autoPlay muted playsInline></video>
+
+          <div className="flex justify-center space-x-4">
+            {isrecording ? (
+              <button onClick={stopRecording}>Stop Recording</button>
+            ) : (
+              <button onClick={startRecording}>
+                Start Recording
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="flex items-center justify-center space-x-4">
