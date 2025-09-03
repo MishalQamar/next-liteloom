@@ -1,9 +1,12 @@
 'use client';
 
+import { VideoForm } from '@/features/video/videoForm';
 import { useEffect, useRef, useState } from 'react';
 
 export default function CreateVideo() {
   const player = useRef<HTMLVideoElement>(null);
+  const videoPreview = useRef<HTMLVideoElement>(null);
+
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(
     null
@@ -11,6 +14,10 @@ export default function CreateVideo() {
   const [recorder, setRecorder] = useState<MediaRecorder | null>(
     null
   );
+
+  const [blob, setBlob] = useState<Blob | null>(null);
+
+  const blobUrl = blob ? URL.createObjectURL(blob) : null;
 
   console.log(recorder);
 
@@ -28,6 +35,20 @@ export default function CreateVideo() {
       player.current.srcObject = stream;
     }
   }, [stream]);
+
+  useEffect(() => {
+    if (videoPreview.current && blobUrl) {
+      videoPreview.current.src = blobUrl;
+    }
+  }, [blobUrl]);
+
+  useEffect(() => {
+    if (blob) {
+      const formVideo = new File([blob], 'video.mp4', {
+        type: 'video/mp4',
+      });
+    }
+  }, [blob]);
 
   const captureWebcam = () => {
     if (shouldCaptureAudio) {
@@ -92,7 +113,11 @@ export default function CreateVideo() {
       chunks.current.push(event.data);
     };
     newRecorder.onstop = () => {
-      console.log(chunks);
+      const blob = new Blob(chunks.current, {
+        type: 'video/mp4',
+      });
+      setBlob(blob);
+      chunks.current = [];
     };
   };
 
@@ -110,6 +135,8 @@ export default function CreateVideo() {
   return (
     <div>
       <div>Create Video</div>
+      {blobUrl && <VideoForm videoPreview={videoPreview} />}
+
       {streamActive ? (
         <div>
           <video ref={player} autoPlay muted playsInline></video>

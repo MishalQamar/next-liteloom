@@ -15,3 +15,13 @@ datasource db {
   // uncomment next line if you use Prisma <5.10
   // directUrl = env("DATABASE_URL_UNPOOLED")
 }
+
+model Video {
+  id          String   @id @default(uuid())
+  userId      String?
+  title       String
+  description String   @db.Text
+  videoUrl    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
